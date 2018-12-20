@@ -12,9 +12,11 @@ import (
 )
 
 var flagwait int
+var flagIgnoresSIGTERM bool
 
 func init() {
 	flag.IntVar(&flagwait, "wait", 5, "wait time in seconds for http req")
+	flag.BoolVar(&flagIgnoresSIGTERM, "ignore-sigterm", true, "ignore SIGTERM [default=true]")
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -38,10 +40,11 @@ func main() {
 	signal.Notify(sigc,
 		syscall.SIGTERM,
 	)
-	go catchSignal(sigc)
-
+	if flagIgnoresSIGTERM {
+		go catchSignal(sigc)
+	}
 	// HTTP Server
 	http.HandleFunc("/", handler)
-	log.Printf("WaitHTTPServer started on :8080 with %dsec wait ", flagwait)
+	log.Printf("WaitHTTPServer started on :8080 with %dsec wait , PID=%d, IgnoresSIGTERM=%t", flagwait, os.Getpid(), flagIgnoresSIGTERM)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
